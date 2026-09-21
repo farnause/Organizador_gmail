@@ -1,12 +1,12 @@
-## Objectivo
+# Objectivo
 Crear un programa que permita etiquetar y enviar a la papelera mensajes recividos a tu correo gmail, a partir de su remitente, destinatario o ciertas palabras clave en el sujeto del mensaje.
 
-## Como funciona
+# Como funciona
 La idea es establecer comuniación con la API de gmail a través de un proyecto de Google Cloud. Se ha configurado un cliente OAuth para que gmail reconozca mi programa como autorizado, a través del archivo credencials.json.
 Una vez se consiguen las credenciales, y se tienen acceso a los recursos del cliente, se pueden obtener listas de mensjaes a través de una query para hacer una primera selección de los mensajes de tu correo, y luego se procede a el etiquetaje o clasifiacióon pertinente de los correos seleccionados.
 Este funcionamiento es común en la mayoria de funciones existentes en main.py.
 
-## Descripción
+# Descripción
 - **Unitats**:
 Objecto de la classe UnitatsUsades, pensado para controlar las unidades por minuito que estamos consumiendo con peticiones a la API. El parámetro interno LIMIT represena el limite por minuto especificado por el propio gmail, y tiene un valor de 6000. Como parámetros internos tiene unitats, t0 y t1. El parametro unitats almacena las unidades totales consumidas en la ectual ejecución del programa. Tanto t0 y t1 estan pensadas para controlar el tiempo des de la primera petición a la API, es decir cuando unitats=0, a la última petición a la API. La classe UnitatsUsades contiene dos métodos, afegi y times. El primero va almacenando las unidades consumidas en unitats, reiniciando su valor en caso de haver pasado un minuto, y devuelve 0 cuando hemos sobrepassado 6000 unidades por minuto en la actual ejecución del programa. El método times por otro lado, imprime el valor actual de unitats, y el tiempo pasado entre la primera petición (unitats=0) y la última petición.
 - **get_credentials**:
@@ -32,10 +32,14 @@ Función que elimina el archivo "Token.json" en caso de que exista, y vuelve a c
 - **contador**:
 Función pensada para ejecutarse al final del codigo en el que se este trabajando. Simplemente ejecuta el métoddo times de Unitats para obtener el tiempo que falta para que se reincie el valor de unitats. Eso es relevante de cara a varias ejecuciones sucesivas del programa, ya que el valor de unitats no se traslada de ejecución a ejecución, perdiendo el control de las unidades consumidas por minuto. Por eso contador para el programa hasta que entre la primera petición y el final de la ejecución del programa pase 1 min. Por ese motivo esta función solo se recomienda ponerla en caso de ejecutar una o más funciones que hagan una cantidad sustancial de peticiones.
 
-En todas las querys que se hacen en las funciones, se ignoran los mensajes marcados como destacados, para dejarlos al margen de cualquier clasificación
+## Observaciones
+* En todas las querys que se hacen en las funciones, se ignoran los mensajes marcados como destacados, para dejarlos al margen de cualquier clasificación
 
-## Requisitos
+# Requisitos
 
 A parte de las versiones de los paquetes especificadas en requirements.txt, también es necesario poner en el directorio del programa el archivo credentials.json que uno obtiene al configurar su cliente OAuth.
 
-## Comentarios personales respecto el programa 
+# Comentarios personales respecto el programa
+
+El objetivo personal con este programa era poder entender bien el concepto de API, y el de cliente de API, y la estructura básica que debe tener un programa que se comunique con una API. Mientras que la funcionalidad de este programa es la misma que la barra buscador que el propio correo de gmail incorpora, me ha permitido conseguir lo que buscava entender respecto mis objetivos. 
+Además me ha permitido sentirme un poco más comodo con la programación orientada a objetos, cosa necesaria debido a que la mayor parte de mi experiencia en programación proviene de programar en C. 
