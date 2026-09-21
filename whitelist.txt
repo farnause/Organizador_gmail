@@ -1,0 +1,3 @@
+{
+    "remitentes":["ejemplo@correo.com"]
+}

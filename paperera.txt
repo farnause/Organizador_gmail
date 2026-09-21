@@ -1,0 +1,6 @@
+{
+"remitentes": [
+        "spam@correo.com", 
+        ],
+        "keywords": ["Palabra", "Palabra1 y Palabra2"]
+}

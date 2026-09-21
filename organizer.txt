@@ -1,0 +1,15 @@
+{
+    "nombre_etiqueta_1": {
+        "id":null,
+        "keywords": ["Palabra", "Palaba1 y Palabra2"],
+        "remitentes":["ejemplo1@correo.com"],
+        "destinatarios":["ejemplo2@correo.com"]
+        },
+    "nombre_etiqueta_2":  {
+        "id":null,
+        "keywords": [],
+        "remitentes":[],
+        "destinatarios":[]
+    
+    }
+}

@@ -2,11 +2,10 @@ from googleapiclient.discovery import HttpError, build
 from google.oauth2.credentials import Credentials 
 from google_auth_oauthlib.flow import InstalledAppFlow 
 
+from googleapiclient.http import BatchHttpRequest
 
 import json 
 import os
-import time 
-
 
 class CredentialError(Exception):
     pass
@@ -19,7 +18,7 @@ class NoMessagesFound(Exception):
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.modify"
-]#SCOPES generales
+]
 
 #OBTENCIÓN DE CREDENCIALES Y RECURSOS
 def get_credentials ():
@@ -30,7 +29,7 @@ def get_credentials ():
         )
     else:
         try:#Crea el archivo Token.json a partir del archivo preexistente credenciales.json
-            flow=InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES) #El archivo credentials.json contiene la configuaración del cliente OAuth qeu identifica el programa ante google y permite que haya una comunicación con la API de gmail
+            flow=InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)#El archivo credentials.json contiene la configuaración del cliente OAuth qeu identifica el programa ante google y permite que haya una comunicación con la API de gmail
         except Exception as e:
             print(e)
             raise CredentialError("Problemas con el archivo credentials.json")
@@ -67,41 +66,42 @@ def get_msg(msg,ID, user="me"):
     return missatge
 
 #ETIQUETAJE
-def etiquetar (msg, lbls, user="me"):
-
-    organizer={ #Diccionario en el que se especifican los filtros. En keywords se buscan en el subject del mensaje y se permiten frases
-        "nombre_etiqueta_1": {
-            "id":None,
-            "keywords": ["Palabra", "Palabra1 y Palabra2"],
-            "remitentes":["ejemplo@correo.com"]
-            },
-        "nombre_etqueta_2":  {
-            "id":None,
-            "keywords": [],
-            "remitentes":[]
-        }
-    }
+def etiquetar (cliente, msg, lbls, user="me"):
+    try: #obtenemos el organizer a través de los archivos .txt
+        with open("organizer.txt", "r", encoding="utf-8") as f: 
+            organizer=json.load(f)
+    except json.JSONDecodeError:
+        raise json.JSONDecodeError("Hay un error con el archivo organizer.txt")
+    except FileNotFoundError:
+        raise FileNotFoundError("El archivo organizer.txt no existe")
+    
+    #construimos la query
     query=[]
     Labels=[]
     for lb in organizer:
-        Labels.append(f"-label:{lb}") #los mensjaes que ya tienen alguna de las etiquetas se consideran ya clasificados y decidimos saltarlos
-
-        for kw in organizer[lb]["keywords"]: #añadimos a la query las palabres o frases clave especificadas en keywords
+        Labels.append(f"-label:{lb}") #los mensajes que ya tienen una etiqueta presente en el organizer se considera que ya esta clasificado
+        for kw in organizer[lb]["keywords"]:
              query.append(f"subject:{kw}")
 
-        for n in organizer[lb]["remitentes"]: #añadimos los remitentes que nos interesan
+        for n in organizer[lb]["remitentes"]: #remitentes especificados en organizer
             query.append(f"from:{n}")
             query.append(f"to:{n}")#también filtramos los mensjaes tales que los destinatarios són los remitentes especificados, para detectar conversaciones bidireccionales
+        for x in organizer[lb]["destinatarios"]: #destinatarios especificados en organizer
+            query.append(f"to:{x}")
 
     query=" OR ".join(query)
     Labels=" ".join(Labels)
-    q=f"-is:starred {Labels} {{{query}}}" #obviamos también los mensajes destacados
+    q=f"-is:starred {Labels} {{{query}}}" #se ignoran los mensajes destacados
 
-    #obtenemos la lista de mensajes esepcificados y etiquetas existentes
+    #obtenemos la lista de mensajes y etiquetas
     llista_missatges = msg.list(userId=user,q=q).execute()
     llista_labels = lbls.list(userId=user).execute()
 
-    #Creamos las etiquetas de organizer que no existan
+    total=llista_missatges["resultSizeEstimate"]
+    if total == 0:
+        raise NoMessagesFound("No hay mensajes que respondan a la query.")
+
+    #Creamos las etiquetas de organizer en caso de que no existan, y obtenemos sus id's
     for lb in organizer:
         for l in llista_labels["labels"]:
             if l["name"]==lb:
@@ -112,86 +112,125 @@ def etiquetar (msg, lbls, user="me"):
                 organizer[lb]["id"]=nova_lbl["id"]
                 print(f"Se ha creado la etiqueta {lb}")
 
-    total=llista_missatges["resultSizeEstimate"]
-    if total == 0:
-        raise NoMessagesFound("No hay mensajes que respondan a la query.")
-    cont=0#contador de mensajes
+    cont=0 #es el contador de mensajes procesados
+    callback=crear_callback_2(msg,organizer,user)#creamos la función callback para batch
+
     while True:
         for m in llista_missatges.get("messages", []):
-
-            a=msg.get(userId=user, id=m["id"], format="metadata", metadataHeaders=["Subject", "From"]).execute()
-
-            label_ids_to_add=set()#lugar donde almacenamos las id's de las labels a añadir. Queremos ahorrarnos duplicados por eso lo hacemos en un set
-            asunto=None
-
-            #obtenemos los headers respeto los que filtramos en organizer
-            for head in a["payload"]["headers"]:
-                if head["name"] == "Subject":
-                    asunto = head["value"]
-                elif head["name"] == "From":
-                    remitente = head["value"]
-
-            #etiquetaje teniendo en cuenta el subject
-            if asunto is not None:
-                for lb in organizer:
-                    for kw in organizer[lb]["keywords"]:    
-                        if " " in kw:
-                            try:
-                                if kw.lower() in asunto.lower() and organizer[lb]["id"] not in a["labelIds"]:
-                                    label_ids_to_add.add(organizer[lb]["id"])
-                            except KeyError as e:
-                                print(f"Atención:{e}. El mensaje {m["id"]} no tiene el contenedor de labelIds.", end="")
-                                if kw.lower() in asunto.lower():
-                                    label_ids_to_add.add(organizer[lb]["id"])
-                                    print(f": Se ha etiquetado correctamente")
-                                print("\n")
-                                
-                        else:
-                            paraules=asunto.lower().split()
-                            try:
-                                if kw.lower() in paraules and organizer[lb]["id"] not in a["labelIds"]:
-                                    label_ids_to_add.add(organizer[lb]["id"])
-                            except KeyError as e:
-                                print(f"Atenció, KeyError:{e}. El mensaje {m["id"]} no tiene el contenedor labelIds.", end="")
-                                if kw.lower() in paraules:
-                                    label_ids_to_add.add(organizer[lb]["id"])
-                                    print(f": Se ha etiquetado correctamente")
-                                print("\n")
-            #etiquetaje segun el remitente
-            for lb in organizer:
-                for sd in organizer[lb]["remitentes"]:
-                    try:
-                        if sd in remitente and organizer[lb]["id"] not in a["labelIds"]:
-                            label_ids_to_add.add(organizer[lb]["id"])
-                    except KeyError as e:
-                        print(f"Atenció, KeyError: {e}, missatge: {m["id"]}.", end="")
-                        if sd in remitente:
-                            label_ids_to_add.add(organizer[lb]["id"])
-                            print(f": El mensaje del remitente {sd} no tiene el contenedor de labelIds pere se ha etiquetado correctamente")
-                        print("\n") 
-
-            #añadimos las etiquetas especificadas
-            if label_ids_to_add:
-                label_ids_to_add = list(label_ids_to_add)
-                msg.modify(
-                    userId=user, 
-                    id=m["id"],
-                    body={
-                        "addLabelIds": label_ids_to_add,
-                        "removeLabelIds": ["INBOX"]
-                        }
-                    ).execute()
+            if cont%50==0:#evitamos asi que el batch contenga demasiadas peticiones a la vez y nos salte rateLimitExceded
+                if cont>0:#si hemos procesado más de un mensaje entonces seguro que el batch ya ha sido creado, y podemos ejecutarlo
+                    batch.execute(http=cliente._http)
+                batch=BatchHttpRequest(batch_uri=cliente._baseUrl + cliente._rootDesc["batchPath"])#creamos el batch para nuestras peticiones de la página actual de mensajes. Especificamos donde tiene que enviar-le las ordenes en la API de gmail
+            peticio=msg.get(userId=user, id=m["id"], format="metadata", metadataHeaders=["Subject", "From", "To"])
+            batch.add(peticio, callback=callback)#añadimos la petición al batch
             cont+=1
-            if cont==prog +50:
-                prog+=50
-                print(f"\r{cont}", end="")
-
-        #control de pagina
-        TokenPagina = llista_missatges.get("nextPageToken") 
+        batch.execute(http=cliente._http) #ejecutamos la primera pagina de peticiones   
+        TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
+        print(f"\rMensajes: {cont}")
         if TokenPagina is None:
             break
         llista_missatges=msg.list(userId=user, pageToken=TokenPagina,q=q).execute()
-    print(f"\ntotal:{cont}")
+    print(f"Total mensajes procesados:{cont}")
+
+def crear_callback_2(msg, organizer, user):
+    #función que crea el callback para el batch de etiquetaje 
+    def callback (request_id, response, exception):
+        if exception is not None: 
+            if isinstance(exception,HttpError):
+                error = json.loads(exception.content)
+                reason=error.get("error", {}).get("errors", [{}])[0].get("reason")
+                if reason == "rateLimitExceeded":
+                    return 
+                else:
+                    raise HttpError (f"Atencion {error}")
+            else:
+                raise Exception (f"{exception} en la peticion {request_id} del batch")
+
+        label_ids_to_add=set()#lugar en el almacenamos las id's de las etiquetas que queremos añadir al mensaje. No queremos duplicados asi que lo hacemos en un set
+
+        #inicializamos las variables que contienen el asunto, el remitente y el destinatario del mensaje para evitar problemas. En caso de que no tengan, sencillamente no entraran dentro del for respectivo
+        asunto=""
+        remitente=""
+        destinatario=""
+
+        label_ids=response.get("labelIds",[]) #id's del mensaje. Si no teiene devolvemos una lista vacia
+
+        for head in response["payload"]["headers"]:#almacenamos los valores de los headers que nos interessan del mensaje
+            if head["name"] == "Subject":
+                asunto = head["value"]
+            elif head["name"] == "From":
+                remitente = head["value"]
+            elif head["name"] == "To":
+                destinatario = head["value"]
+
+        paraules=asunto.lower().split()
+
+        for lb in organizer: #etiquetaje 
+            for kw in organizer[lb]["keywords"]: #respecto el Subject  
+                if " " in kw:
+                    if kw.lower() in asunto.lower() and organizer[lb]["id"] not in label_ids:
+                        label_ids_to_add.add(organizer[lb]["id"])
+                else:
+                    if kw.lower() in paraules and organizer[lb]["id"] not in label_ids:
+                        label_ids_to_add.add(organizer[lb]["id"])
+            for sd in organizer[lb]["remitentes"]: #respecto el remitente
+                if sd in remitente and organizer[lb]["id"] not in label_ids:
+                    label_ids_to_add.add(organizer[lb]["id"])
+                if sd in destinatario and organizer[lb]["id"] not in label_ids:#hacemos la filtración propia también con los destinatarios
+                    label_ids_to_add.add(organizer[lb]["id"])
+            for rm in organizer[lb]["destinatarios"]: #respcto los destinatarios
+                if rm in destinatario and organizer[lb]["id"] not in label_ids:
+                     label_ids_to_add.add(organizer[lb]["id"])
+        if label_ids_to_add: #añadimos las etiquetas pertinentes
+            label_ids_to_add = list(label_ids_to_add)
+            msg.modify(
+                userId=user, 
+                id=response["id"],
+                body={
+                    "addLabelIds": label_ids_to_add,
+                    "removeLabelIds": ["INBOX"]
+                    }
+                ).execute()
+    return callback
+
+def rmv_label(lbls,lbl_name, remitent , msg, user="me"):
+
+    query=f"from:{remitent}"
+    q=f"-is:starred label:{lbl_name} {{{query}}}" #creamos la query que nos devuelva los mensajes con la etiqueta especificada y el remitente especificado. Evitamos los destacados
+    
+    llista_missatges = msg.list(userId=user,q=q).execute()
+    llista_labels = lbls.list(userId=user).execute()
+
+    total=llista_missatges["resultSizeEstimate"]
+    if total == 0:
+        raise NoMessagesFound("No hay mensajes que respondan a la query.")
+
+    lbl_id=None
+
+    for l in llista_labels["labels"]: #obtenemos id etiqueta
+        if l["name"].lower()==lbl_name.lower():
+            lbl_id=l["id"]
+            break
+    if lbl_id is None:
+        raise Exception("Etiqueta introducida no encontrada")
+    
+    cont=0
+    while True: #desetiquetamos todos los mensajes especificados
+        for m in llista_missatges.get("messages", []):
+            msg.modify(
+                userId=user, 
+                id=m["id"],
+                body={
+                    "removeLabelIds": [lbl_id]
+                    }
+                ).execute()
+            cont+=1      
+        TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
+        print(f"\rMensajes: {cont}") 
+        if TokenPagina is None:
+            break
+        llista_missatges=msg.list(userId=user, pageToken=TokenPagina,q=q).execute()
+    print(f"Total mensajes procesados:{cont}")
 
 def safata_entrada_scan(msg, user="me"):
     llista_missatges = msg.list(userId=user,q="label:INBOX").execute()#obtenemos lista mensajes que esten en la bandeja entrada
@@ -218,72 +257,29 @@ def safata_entrada_scan(msg, user="me"):
                  print(f"Atenció, KeyError:{e}. El missatge {m["id"]} no te el contenidor de labelIds. S'ha omés") 
 
             cont+=1
-            if cont%50==0:
-                print(f"\r{cont}", end="")
-
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
+        print(f"\rMensajes: {cont}")
         if TokenPagina is None:
             break
         llista_missatges=msg.list(userId=user, pageToken=TokenPagina,q="label:INBOX").execute()
-    print(f"\ntotal:{cont}")
-
-def rmv_label(lbls,lbl_name, remitent , msg, user="me"):
-
-    query=f"from:{remitent}"
-    q=f"-is:starred label:{lbl_name} {{{query}}}" #creamos la query que nos devuelva los mensajes con la etiqueta especificada y el remitente especificado. Evitamos los destacados
-    
-    llista_missatges = msg.list(userId=user,q=q).execute()
-    llista_labels = lbls.list(userId=user).execute()
-
-    total=llista_missatges["resultSizeEstimate"]
-    if total == 0:
-         raise NoMessagesFound("No hay mensajes que respondan a la query.")
-
-    lbl_id=None
-
-    for l in llista_labels["labels"]: #obtenemos id etiqueta
-        if l["name"].lower()==lbl_name.lower():
-            lbl_id=l["id"]
-            break
-    if lbl_id is None:
-        raise Exception("Etiqueta introducida no encontrada")
-    
-    cont=0
-    while True: #desequitetamos todos los mensajes especificados
-        for m in llista_missatges.get("messages", []):
-            msg.modify(
-                userId=user, 
-                id=m["id"],
-                body={
-                    "removeLabelIds": [lbl_id]
-                    }
-                ).execute()
-            cont+=1
-            if cont % 50==0:
-                print(f"\r{cont}", end="")       
-        TokenPagina = llista_missatges.get("nextPageToken") #control de pagina 
-        if TokenPagina is None:
-            break
-        llista_missatges=msg.list(userId=user, pageToken=TokenPagina,q=q).execute()
-    print(f"\ntotal:{cont}")
+    print(f"Total mensajes procesados:{cont}")
 
 #ENVIAR MENSAJES A LA PAPELERA
 def marcar_brossa (msg,lbls, user="me"):
-    paperera={ #diccionario con los remitentes que queremos que sean marcados como basura, o con ciertas palabras o frases clave en el Subject
-        "remitentes": [
-            "ejemplo1@correo.com"
-            ],
-        "keywords": []
-    }
+    try:#obtenemos de paperera.txt y whitelist.txt los diccionarios que nos permiten clasificar mensajes como correo basura y mensajes exemptos de ser considerados, respectivamente
+        with open("paperera.txt", "r", encoding="utf-8") as f: 
+            paperera=json.load(f)
+        with open("whitelist.txt", "r", encoding="utf-8") as ff: 
+            whitelist=json.load(ff)
+    except json.JSONDecodeError:
+        raise json.JSONDecodeError("Hay algun error con los archivos paperera.txt y whitelist.txt")
+    except FileNotFoundError:
+        raise FileNotFoundError("Alguno de los archivos requeridos no existe (paperera.txt, whitelist.txt)")
 
-    whitelist={ #diccionario que indica los remitentes que seran exemptos de ser considerados candidatos a basura
-        "remitentes":["ejemplo2@correo.com"]
-    }
-
-    #creación de la query segun los diccionarios whitelist y paperera
+    #construimos la query segun paperera.txt e ignorando los de whitelist.txt
     query=[]
     queryW=[]
-    for n in whitelist["remitentes"]:
+    for n in whitelist["remitentes"]: 
             queryW.append(f"-from:{n}")
     for n in paperera["remitentes"]:
         query.append(f"from:{n}")
@@ -291,13 +287,17 @@ def marcar_brossa (msg,lbls, user="me"):
         query.append(f"subject:{n}")
     query=" OR ".join(query)
     queryW=" ".join(queryW)
-    q=f"-is:starred -label:Papelera {queryW} {{{query}}}" #obviamos también los mensajes destacados
+    q=f"-is:starred -label:Papelera {queryW} {{{query}}}" #obviamos los mensajes destacados
 
-    #obtención de los mensajes y etiquetas
+    #lista de mensajes y etquetas segun la query
     llista_missatges = msg.list(userId=user,q=q).execute()
     llista_labels = lbls.list(userId=user).execute()
 
-    #si la etiqueta papelera no existe, la creamos. En caso contrario obtenemos su id
+    total=llista_missatges["resultSizeEstimate"]
+    if total == 0:
+        raise NoMessagesFound("No hay mensajes que respondan a la query.")
+
+    #si la etiqueta Papelera no existe la creamos, si existe obtenemos su id
     Check=1
     for l in llista_labels["labels"]:
         if l["name"]=="Papelera":
@@ -306,29 +306,23 @@ def marcar_brossa (msg,lbls, user="me"):
             break
     if Check:
         etiqueta_brossa=lbls.create(userId=user, body={"name": "Papelera"}).execute()#guardem el resultat per guardar la id
-        print(f"S'ha creat la etiqueta Papelera")
-
-    total=llista_missatges["resultSizeEstimate"]
-    if total == 0:
-        raise NoMessagesFound("No hay mensajes que respondan a la query.")
+        print(f"Se ha creado la etiqueta Papelera")
 
     cont=0
 
-    while True:
+    while True: #los mensajes seleccionados los enviamos a la papelera
         for m in llista_missatges.get("messages",[]):
             msg.modify(userId=user, id=m["id"],body={"addLabelIds": [etiqueta_brossa["id"]]}).execute()
             cont+=1
-            if cont%50==0:
-                print(f"\r{cont}", end="")
-
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
         if TokenPagina is None:
             break
         llista_missatges=msg.list(userId=user, pageToken=TokenPagina,q=q).execute()
-    print(f"\ntotal:{cont}")
+        print(f"\rMensajes: {cont}")
+    print(f"Total mensajes procesados:{cont}")
 
 def enviar_brossa(msg, user="me"):
-    #función complementaroa a marcar_brossa
+    #función complementaria a marcar_brossa
     
     q="label:Papelera"
     llista_missatges = msg.list(userId=user,q=q).execute() #lista mensajes con la etiqueta Papelera
@@ -340,30 +334,30 @@ def enviar_brossa(msg, user="me"):
         for m in llista_missatges.get("messages", []):
             msg.trash(userId=user,id=m["id"]).execute()
             cont+=1
-            if cont%50==0:
-                print(f"\r{cont}", end="")
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
+        print(f"\rMensajes: {cont}")
         if TokenPagina is None:
             break
         llista_missatges=msg.list(userId=user, pageToken=TokenPagina,q=q).execute()
-    print(f"\ntotal:{cont}")
+    print(f"Total mensajes procesados:{cont}")
 
-
-#FUNCIO PER CANVIAR D'USUARI
+#FUNICIÓN PARA CAMBIAR DE USUARIO
 def reset_user ():
     if os.path.exists("Token.json"):
         os.remove("Token.json")
-        print("Se ha eliminado Token.json. Inicia la sesion con otro usuario autorizado")
+        print("Se ha eliminado Token.json. Inicia la sesión con otro usuario autorizado")
+
 
 if __name__=="__main__":
     
     credentials=get_credentials()
     cliente=cliente_gmail(credentials)
     msg,lbls=recursos(cliente)
-   
-    etiquetar(cliente,msg, lbls)
+
+    etiquetar(msg,lbls)
     marcar_brossa(msg, lbls)
     enviar_brossa(msg)
+    etiquetar(cliente,msg, lbls)
             
 
     
