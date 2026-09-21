@@ -473,11 +473,11 @@ def contador ():#esta función pone el programa en pausa el tiempo suficiente co
 
 print("Para poder controlar bien el marcador de unidades, se debe ejecutar la funcion contador al final del codigo")
 
+credentials=get_credentials()
+cliente=cliente_gmail(credentials)
+msg,lbls=recursos(cliente)
+
 if __name__=="__main__":
-    
-    credentials=get_credentials()
-    cliente=cliente_gmail(credentials)
-    msg,lbls=recursos(cliente)
 
     etiquetar(msg,lbls)
     marcar_brossa(msg, lbls)
