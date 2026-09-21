@@ -13,6 +13,7 @@ Objecto de la classe UnitatsUsades, pensado para controlar las unidades por minu
 Función que usa el archivo credentials.json y los SCOPES especificados para autorizar a nuestro programa a enviar peticiones a la API de gmail con un usuario autorizado. La primera vez que se autoriza el programa, se crea un Token.json que permite autorizar automaticamente el programa en futuras ejecuciones, sin necesidad de abrir el navegador.
 - **cliente_gmail y recursos**:
 Son dos funciones complementarias. La primera crea el cliente de la API de gmail, y la segunda habilita que podamos acceder a los mensajes del usuario autorizado y a sus etiquetas de gmail.
+
 - **get_msg**:
 Función que te permite acceder a un coreo especifico a través de su id.
 - **etiquetar y crear_callback_2**:
