@@ -251,9 +251,12 @@ def crear_callback_2(msg, organizer, user):
                 raise QuoataAssolida ("El batch superaria la quota per minuto.")
     return callback
 
-def rmv_label(lbls,lbl_name, remitent , msg, user="me"):
+def rmv_label(lbls,lbl_name, msg, user="me", remitent=None):
 
-    query=f"from:{remitent}"
+    if remitent is not None:
+        query=f"from:{remitent}"
+    else:
+        query=""
     q=f"-is:starred label:{lbl_name} {{{query}}}" #creamos la query que nos devuelva los mensajes con la etiqueta especificada y el remitente especificado. Evitamos los destacados
     
     if Unitats.afegir(6):
@@ -463,21 +466,23 @@ def reset_user ():
     if os.path.exists("Token.json"):
         os.remove("Token.json")
         print("Se ha eliminado Token.json. Inicia la sesión con otro usuario autorizado")
+    credentials=get_credentials()
+    return credentials
 
 #FUNCIÓN PARA REINICIAR BIEN EL CONTADOR DE UNIDADES
 def contador ():#esta función pone el programa en pausa el tiempo suficiente como para poder usar el parametro unitats de Unitats como contador para la quota por minuto por usuario (en caso de que el programa no forme parte de un proyecto más grande en google cloud). Para operaciones que se preve que tarden bastante menos de medio minuto no es necesario usarlo debido a que el tiempo que el programa permanecerà parado sera sustancialmente mayor al que tardara en ejecutarse
-    print(Unitats.times())
+    Unitats.times()
     print(f"Pausant per {int(Unitats.t1-Unitats.t0+1)}s")
     time.sleep(Unitats.t1-Unitats.t0+1)
     
 
 print("Para poder controlar bien el marcador de unidades, se debe ejecutar la funcion contador al final del codigo")
 
-credentials=get_credentials()
-cliente=cliente_gmail(credentials)
-msg,lbls=recursos(cliente)
 
 if __name__=="__main__":
+    credentials=get_credentials()
+    cliente=cliente_gmail(credentials)
+    msg,lbls=recursos(cliente)
 
     etiquetar(msg,lbls)
     marcar_brossa(msg, lbls)
