@@ -1,7 +1,7 @@
 # Objectivo
 Crear un programa que permita etiquetar y enviar a la papelera mensajes recibidos a tu correo de Gmail, a partir de su remitente, destinatario o ciertas palabras clave en el sujeto del mensaje.
 
-# Como funciona
+# Cómo funciona
 La idea es establecer comunicación con la API de Gmail mediante un proyecto de Google Cloud. Para ello se ha configurado un cliente OAuth para que Gmail reconozca mi programa como autorizado y solicite al usuario autorización para acceder a su cuenta de Gmail. La configuración del cliente OAuth se guarda en el archivo `credentials.json`.  
 Una vez completado el proceso de autenticación, se obtienen los permisos necesarios especificados en `SCOPES`, para poder interactuar con la API de Gmail (que posteriormente se guardarán en `Token.json`), y podemos conseguir los recursos que queremos como cliente.   
 Una vez obtenidos los recursos que queremos (en nuestro caso, mensajes y etiquetas), se pueden obtener listas de mensajes a través de una query a Gmail, para hacer una primera selección de los mensajes del correo del usuario, y luego se procede al etiquetaje o clasificación pertinente de los correos seleccionados.  
