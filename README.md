@@ -17,7 +17,12 @@ Función que te permite acceder a un coreo especifico a través de su id
 Etiquetar es la función que etiqueta todos tus mensajes según el remitente, el destinatario y ciertas palabras o frases del sujeto del mensaje. Primero lee el contenido de organizer.txt y lo convierte a un diccionario. A partir de ese diccionario se hace una query de mensajes al gmail para obtener una lista de mensajes suceptibles a ser etiquetados segun nuestros parámetros. Todos los remitentes especificados en la lista de remitentes de organizer, también contaran automaticamente como destinatarios, para detectar conversaciones bidireccionales y evitar duplicados entre las listas de remitentes y destinatarios de organizer. Una vez hecha la query, se almacenan los mensajes obtenidos en una lista. Utilizamos un while para movernos a través de las paginas de esa lista hasta llegar al final.
 Etiquetar es la única función que utiliza batch, por lo que se ha limitado la cantidad de peticiones simultaneas que puede almecenar cada batch a 50, para evitar errores.
 crea_callback_2 simplemente crea la función callback que necesita batch.execute, y es donde se hace el etiquetaje de cada mensaje.
--**rmv_label**:
+- **rmv_label**:
+Elimina una etiqueta de todos los mensajes del correo que tengan una etiqueta especificada. Se puede especificar el remitente dando valor a la variable "remitent". Se limita a como máximo todos los mensajes de una etiqueta en vez de todos los mensajes del correo para reducir el riesgo de sobrepasar el limite de 6000 unidades por minuto de gmail.
+- **safata_entrada_scan**:
+Elimina la etiqueta "INBOX" de los mensajes de la bandeja de entrada.
+- **marcar_brossa i enviar_brossa**:
+Dos funciones complementarias destinadas a eliminar correos no deseados. marcar_brossa etiqueta los mensajes de ciertos remitentes o con ciertas palabras en el sujeto, con la etiqueta "Papelera" (creandola en caso de que no exista). Luego enviar_brossa manda los mensajes con dicha etiqueta a la basura. Este sistema 
 
 
 
