@@ -44,3 +44,4 @@ A parte de las versiones de los paquetes especificadas en requirements.txt, tamb
 
 El objetivo personal con este programa era poder entender bien el concepto de API, y el de cliente de API, y la estructura básica que debe tener un programa que se comunique con una API. Mientras que la funcionalidad de este programa es la misma que la barra buscador que el propio correo de gmail incorpora, me ha permitido conseguir lo que buscava entender respecto mis objetivos. 
 Además me ha permitido sentirme un poco más comodo con la programación orientada a objetos, cosa necesaria debido a que la mayor parte de mi experiencia en programación proviene de programar en C. 
+Por último, destacar que con este programa me he dado cuenta de ciertos aspectos que puedo mejorar, ya sea con un mejor control de los errores, o incluso un control más consistente de estos errores, y tamién una mejor organización en funciones del codigo para evitar funciones kilometricas. 
