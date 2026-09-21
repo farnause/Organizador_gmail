@@ -13,8 +13,10 @@ Como parámetros internos tiene unitats, t0 y t1. El parametro unitats almacena 
 La classe UnitatsUsades contiene dos métodos, afegi y times. El primero va almacenando las unidades consumidas en unitats, reiniciando su valor en caso de haver pasado un minuto, y devuelve 0 cuando hemos sobrepassado 6000 unidades por minuto en la actual ejecución del programa. El método times por otro lado, imprime el valor actual de unitats, y el tiempo pasado entre la primera petición (unitats=0) y la última petición.
 - **get_credentials**:
 Función que usa el archivo credentials.json y los SCOPES especificados para autorizar a nuestro programa a enviar peticiones a la API de gmail con un usuario autorizado. La primera vez que se autoriza el programa, se crea un Token.json que permite autorizar automaticamente el programa en futuras ejecuciones, sin necesidad de abrir el navegador.
+Argumentos: No
 - **cliente_gmail y recursos**:
 Son dos funciones complementarias. La primera crea el cliente de la API de gmail, y la segunda habilita que podamos acceder a los mensajes del usuario autorizado y a sus etiquetas de gmail.
+Argumentos: 
 
 - **get_msg**:
 Función que te permite acceder a un coreo especifico a través de su id.
