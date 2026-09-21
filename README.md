@@ -32,7 +32,7 @@ Función que elimina el archivo "Token.json" en caso de que exista, y vuelve a c
 - **contador**:
 Función pensada para ejecutarse al final del codigo en el que se este trabajando. Simplemente ejecuta el métoddo times de Unitats para obtener el tiempo que falta para que se reincie el valor de unitats. Eso es relevante de cara a varias ejecuciones sucesivas del programa, ya que el valor de unitats no se traslada de ejecución a ejecución, perdiendo el control de las unidades consumidas por minuto. Por eso contador para el programa hasta que entre la primera petición y el final de la ejecución del programa pase 1 min. Por ese motivo esta función solo se recomienda ponerla en caso de ejecutar una o más funciones que hagan una cantidad sustancial de peticiones.
 
-En todas las querys que se hacen en la función, se ignoran los mensajes marcados como destacados, para dejarlos al margen de cualquier clasificación
+En todas las querys que se hacen en las funciones, se ignoran los mensajes marcados como destacados, para dejarlos al margen de cualquier clasificación
 
 ## Requisitos
 
