@@ -7,6 +7,8 @@ Una vez se consiguen las credenciales, y se tienen acceso a los recursos del cli
 Este funcionamiento es común en la mayoria de funciones existentes en main.py.
 
 ## Descripción
+-**Unitats**:
+Objecto de la classe UnitatsUsades, pensado para controlar las unidades por minuito que estamos consumiendo con peticiones a la API. El parámetro interno LIMIT represena el limite por minuto especificado por el propio gmail, y tiene un valor de 6000. 
 - **get_credentials**:
 Función que usa el archivo credentials.json y los SCOPES especificados para autorizar a nuestro programa a enviar peticiones a la API de gmail con un usuario autorizado. La primera vez que se autoriza el programa, se crea un Token.json que permite autorizar automaticamente el programa en futuras ejecuciones, sin necesidad de abrir el navegador.
 - **cliente_gmail y recursos**:
@@ -22,8 +24,12 @@ Elimina una etiqueta de todos los mensajes del correo que tengan una etiqueta es
 - **safata_entrada_scan**:
 Elimina la etiqueta "INBOX" de los mensajes de la bandeja de entrada.
 - **marcar_brossa i enviar_brossa**:
-Dos funciones complementarias destinadas a eliminar correos no deseados. marcar_brossa etiqueta los mensajes de ciertos remitentes o con ciertas palabras en el sujeto, con la etiqueta "Papelera" (creandola en caso de que no exista). Luego enviar_brossa manda los mensajes con dicha etiqueta a la basura. Este sistema 
+Dos funciones complementarias destinadas a eliminar correos no deseados. marcar_brossa etiqueta los mensajes de ciertos remitentes o con ciertas palabras en el sujeto, con la etiqueta "Papelera" (creandola en caso de que no exista). Luego enviar_brossa manda los mensajes con dicha etiqueta a la basura. Este sistema esta pensado para poder revisar que mensajes que estamos enviando a la basura antes de realmente eliminarlos, si asi se desea.
 
+- **reset_user**:
+Función que elimina el archivo "Token.json" en caso de que exista, y vuelve a crearlo con las nuevas credenciales. Cabe destacar que antes de ejecutar esta función, se debe proporcionar un nuevo archivo de credentials.json para el nuevo usuario a autorizar, ya que si no reset_user vuelve a autorizar al mismo usuario que ya estaba autorizado.
+
+- **contador**:
 
 
 En todas las querys que se hacen en la función, se ignoran los mensajes marcados como destacados, para dejarlos al margen de cualquier clasificación
