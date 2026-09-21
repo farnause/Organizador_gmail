@@ -34,6 +34,7 @@ Función pensada para ejecutarse al final del codigo en el que se este trabajand
 
 ## Observaciones
 * En todas las querys que se hacen en las funciones, se ignoran los mensajes marcados como destacados, para dejarlos al margen de cualquier clasificación
+* Debido a como esta pensado el etiquetaje a partir de organizer, los mensajes que uno se ha enviado a si mismo no se clasificaran nunca, a no ser que se busquen ciertas palabras clave en el sujeto de estos mensajes que se sepa que dichos mensajes contengan.
 
 # Requisitos
 
