@@ -173,7 +173,7 @@ def etiquetar (cliente, msg, lbls, user="me"):
             batch.add(peticio,callback=callback)
         batch.execute(http=cliente._http) #ejecutamos la primera pagina de peticiones   
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
-        print(f"\rMensajes: {cont}")
+        print(f"\nMensajes: {cont}")
 
         if TokenPagina is None:
             break
@@ -182,7 +182,7 @@ def etiquetar (cliente, msg, lbls, user="me"):
         else:
             print(f"\nMissatges porcessats:{cont}")
             raise QuoataAssolida ("Se ha alcanzado la quota de unidades por minuto.")
-        print(f"\rUnidades: {Unitats.unitats}")
+        print(f"Unidades: {Unitats.unitats}\n")
     print(f"Total mensajes procesados:{cont}")
 
 def crear_callback_2(msg, organizer, user):
@@ -295,7 +295,7 @@ def rmv_label(lbls,lbl_name, msg, user="me", remitent=None):
             cont+=1        
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
 
-        print(f"\rMensajes: {cont}")
+        print(f"\nMensajes: {cont}")
 
         if TokenPagina is None:
             break
@@ -304,7 +304,7 @@ def rmv_label(lbls,lbl_name, msg, user="me", remitent=None):
         else:
             print(f"Se ha alcanzado la quota de unidades por minuto. Espera antes de volver a aplicar la funcion. Porcesados: {cont}.")
             return
-        print(f"\rUnidades: {Unitats.unitats}")
+        print(f"Unidades: {Unitats.unitats}\n")
     print(f"Total mensajes procesados: {cont}")
 
 def safata_entrada_scan(msg, user="me"):
@@ -345,7 +345,7 @@ def safata_entrada_scan(msg, user="me"):
 
             cont+=1
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
-        print(f"\rMensajes: {cont}")
+        print(f"\nMensajes: {cont}")
         if TokenPagina is None:
             break
         if Unitats.afegir(5):
@@ -353,7 +353,7 @@ def safata_entrada_scan(msg, user="me"):
         else:
             print(f"Se ha alcanzado la quota de unidades por minuto. Espera antes de volver a aplicar la funcion. Porcesados: {cont}.")
             return
-        print(f"\rUnidades: {Unitats.unitats}")
+        print(f"Unidades: {Unitats.unitats}\n")
     print(f"Total mensajes procesados:{cont}")
 
 #ENVIAR MENSAJES A LA PAPELERA
@@ -417,7 +417,7 @@ def marcar_brossa (msg,lbls, user="me"):
             cont+=1
 
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
-        print(f"\rMensajes: {cont}")
+        print(f"\nMensajes: {cont}")
         if TokenPagina is None:
             break
         if Unitats.afegir(5):
@@ -425,7 +425,7 @@ def marcar_brossa (msg,lbls, user="me"):
         else:
             print(f"Se ha alcanzado la quota de unidades por minuto. Espera antes de volver a aplicar la funcion. Porcesados: {cont}.")
             return
-        print(f"\rUnidades: {Unitats.unitats}")
+        print(f"Unidades: {Unitats.unitats}\n")
     print(f"\nTotal mensajes: {cont}")
 
 def enviar_brossa(msg, user="me"):
@@ -450,7 +450,7 @@ def enviar_brossa(msg, user="me"):
                 return
             cont+=1
         TokenPagina = llista_missatges.get("nextPageToken") #control de pagina
-        print(f"\rMensajes: {cont}")
+        print(f"\nMensajes: {cont}")
         if TokenPagina is None:
             break
         if Unitats.afegir(5):
@@ -458,7 +458,7 @@ def enviar_brossa(msg, user="me"):
         else:
             print(f"Se ha alcanzado la quota de unidades por minuto. Espera antes de volver a aplicar la funcion. Porcesados: {cont}.")
             return
-        print(f"\rUnidades: {Unitats.unitats}")
+        print(f"Unidades: {Unitats.unitats}\n")
     print(f"Total mensajes procesados:{cont}")
 
 #FUNICIÓN PARA CAMBIAR DE USUARIO
@@ -472,8 +472,8 @@ def reset_user ():
 #FUNCIÓN PARA REINICIAR BIEN EL CONTADOR DE UNIDADES
 def contador ():#esta función pone el programa en pausa el tiempo suficiente como para poder usar el parametro unitats de Unitats como contador para la quota por minuto por usuario (en caso de que el programa no forme parte de un proyecto más grande en google cloud). Para operaciones que se preve que tarden bastante menos de medio minuto no es necesario usarlo debido a que el tiempo que el programa permanecerà parado sera sustancialmente mayor al que tardara en ejecutarse
     Unitats.times()
-    print(f"Pausant per {int(Unitats.t1-Unitats.t0+1)}s")
-    time.sleep(Unitats.t1-Unitats.t0+1)
+    print(f"Pausant per {int(60-(Unitats.t1-Unitats.t0)+1)}s")
+    time.sleep(60-(Unitats.t1-Unitats.t0)+1)
     
 
 print("Para poder controlar bien el marcador de unidades, se debe ejecutar la funcion contador al final del codigo")
